@@ -1,0 +1,25 @@
+#!/bin/bash -e
+
+[ -z "$CORES" ] && CORES=$(nproc)
+
+NAME=$1
+shift
+
+if [ -z "$STY" ]
+then
+	screen -S $NAME -d -m $0 $NAME "$@"
+	screen -r $NAME
+fi
+
+sleep 2
+screen -X screen -t master afl-fuzz -M $NAME-m "$@"
+echo "Press enter to launch workers"
+read ans
+
+for N in $(seq 2 $CORES)
+do
+	screen -X screen -t slave$N afl-fuzz -S $NAME-s$N "$@"
+	sleep 1
+done
+
+bash
